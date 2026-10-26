@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>记账小工具</title>
+    <title>记账工具</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
@@ -17,16 +17,29 @@
     <!-- 顶部状态栏 -->
     <header class="bg-white sticky top-0 z-20 shadow-sm px-4 py-3 flex justify-between items-center">
         <div>
-            <h1 class="text-lg font-bold text-gray-800" id="current-month-title">生活费管家</h1>
+            <h1 class="text-lg font-bold text-gray-800" id="current-month-title">记账工具</h1>
             <p class="text-xs text-gray-500" id="cycle-info">加载中...</p>
         </div>
         <div class="flex items-center space-x-1.5">
+            <button onclick="openBudgetModal()" class="px-2.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition">📊 预算</button>
             <button onclick="openSettings()" class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition">🎛️ 校准</button>
             <button onclick="openBackupModal()" class="px-2.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition">💾 备份</button>
         </div>
     </header>
 
     <main class="max-w-md mx-auto p-4 space-y-4">
+
+        <!-- 总生活费母池统筹条 -->
+        <div onclick="openBudgetModal()" class="bg-white rounded-xl px-3.5 py-2.5 shadow-sm border border-gray-100 flex justify-between items-center cursor-pointer active:scale-[0.99] transition">
+            <div class="flex items-center space-x-2">
+                <span class="text-xs font-bold text-gray-700">🏦 月度总生活费母池</span>
+                <span class="text-xs font-black text-indigo-600" id="mother-pool-total">¥2500</span>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="text-[11px]" id="mother-pool-status">已全部分配</span>
+                <span class="text-xs text-gray-400">⚙️</span>
+            </div>
+        </div>
 
         <!-- 核心双看板 -->
         <div class="grid grid-cols-2 gap-3">
@@ -40,7 +53,7 @@
                     <div class="text-2xl font-black mb-1" id="board-daily-available">¥0.0</div>
                     <div class="text-[10px] text-blue-200 flex justify-between items-center">
                         <span id="board-daily-status">定额 ¥45/天</span>
-                        <span id="board-daily-pool-left">总池 ¥1000</span>
+                        <span id="board-daily-pool-left">总余 ¥1000</span>
                     </div>
                 </div>
                 <button onclick="manualSettleDaily()" id="btn-settle-daily" class="mt-2.5 w-full bg-white/20 hover:bg-white/30 active:bg-white/40 text-white text-[10px] py-1.5 rounded-lg transition font-medium">
@@ -53,7 +66,7 @@
                 <div>
                     <div class="text-xs font-medium text-amber-100 mb-1">💰 省钱信封小金库</div>
                     <div class="text-2xl font-black mb-1" id="board-saving-pool">¥0.0</div>
-                    <div class="text-[10px] text-amber-100" id="board-saving-desc">结余自动滚入 / 超支实时兜底</div>
+                    <div class="text-[10px] text-amber-100" id="board-saving-desc">结余滚入 / 超支与补账兜底</div>
                 </div>
                 <div class="mt-2.5 flex space-x-1.5">
                     <button onclick="openKeypad('saving_spend', '💰 省钱信封（奖励消费）')" class="flex-1 bg-white/20 hover:bg-white/30 text-white text-[10px] py-1.5 rounded-lg transition font-medium">
@@ -66,8 +79,8 @@
         <!-- 分类信封列表 -->
         <div class="space-y-3">
             <div class="flex justify-between items-center px-1">
-                <h2 class="text-sm font-bold text-gray-700">📌 预算信封（点击卡片扣减）</h2>
-                <span class="text-[11px] text-gray-400">超支自动扣省钱信封</span>
+                <h2 class="text-sm font-bold text-gray-700">📌 预算信封（点击记账或补账）</h2>
+                <span class="text-[11px] text-gray-400">支持回溯补记昨天</span>
             </div>
 
             <!-- 1. 工作日三餐专项卡片 -->
@@ -77,14 +90,14 @@
                         <span class="font-bold text-gray-800 text-sm">🍚 工作日三餐</span>
                         <span class="text-[10px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-medium">按天发放</span>
                     </div>
-                    <span class="text-xs font-bold text-blue-600" id="env-daily_meal-text">总池剩余 ¥1000 / ¥1000</span>
+                    <span class="text-xs font-bold text-blue-600" id="env-daily_meal-text">总余 ¥1000 / ¥1000</span>
                 </div>
                 <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                     <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" id="env-daily_meal-bar" style="width: 100%"></div>
                 </div>
                 <div class="flex justify-between items-center mt-2 text-[11px] text-gray-400">
-                    <span id="env-daily_meal-sub">今日剩余可用：¥45.0（未用完次日自动进省钱信封）</span>
-                    <span class="text-blue-500 font-medium shrink-0 ml-2">记账 ></span>
+                    <span id="env-daily_meal-sub">今日可用 ¥45.0 | 未发池余 ¥955.0</span>
+                    <span class="text-blue-500 font-medium shrink-0 ml-2">记账/补账 ></span>
                 </div>
             </div>
 
@@ -96,21 +109,31 @@
         <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
             <div class="flex justify-between items-center mb-3">
                 <h3 class="text-sm font-bold text-gray-700">📝 近期账单流水</h3>
-                <span class="text-[10px] text-gray-400">支持点击 ↩️ 撤销误操作</span>
+                <span class="text-[10px] text-gray-400">支持点击 ↩️ 撤销并原路退回</span>
             </div>
-            <div id="history-list" class="space-y-2 max-h-56 overflow-y-auto no-scrollbar"></div>
+            <div id="history-list" class="space-y-2 max-h-60 overflow-y-auto no-scrollbar"></div>
         </div>
     </main>
 
-    <!-- 记账数字键盘弹窗 -->
+    <!-- 记账数字键盘弹窗（支持回溯补账） -->
     <div id="keypad-modal" class="fixed inset-0 bg-black/50 z-50 flex items-end justify-center hidden">
         <div class="bg-white w-full max-w-md rounded-t-3xl p-5 shadow-2xl">
-            <div class="flex justify-between items-center mb-2">
+            <div class="flex justify-between items-center mb-2.5">
                 <div>
-                    <span class="text-xs text-gray-400">正在扣减：</span>
+                    <span class="text-xs text-gray-400">正在记账：</span>
                     <h3 class="text-base font-bold text-gray-800" id="modal-env-title">加载中...</h3>
                 </div>
                 <button onclick="closeKeypad()" class="text-gray-400 hover:text-gray-600 p-2 text-xl font-bold">&times;</button>
+            </div>
+
+            <!-- 日期选择与回溯补账栏 -->
+            <div class="flex items-center justify-between bg-gray-100 p-1.5 rounded-xl mb-3">
+                <div class="flex space-x-1">
+                    <button id="date-btn-today" onclick="selectExpenseDate('today')" class="px-3 py-1 rounded-lg text-xs font-bold bg-white text-blue-600 shadow-sm transition">今天</button>
+                    <button id="date-btn-yesterday" onclick="selectExpenseDate('yesterday')" class="px-3 py-1 rounded-lg text-xs font-medium text-gray-600 transition">补记昨天</button>
+                    <button id="date-btn-custom" onclick="triggerCustomDate()" class="px-2.5 py-1 rounded-lg text-xs font-medium text-gray-600 transition">📅 自选日期</button>
+                </div>
+                <input type="date" id="custom-date-input" onchange="onCustomDateChange(this.value)" class="text-[11px] bg-transparent text-gray-600 font-mono outline-none w-28 text-right">
             </div>
 
             <!-- 纳指定投专属快捷栏 -->
@@ -150,21 +173,50 @@
                 <button onclick="keypadPress('del')" class="bg-gray-200 active:bg-gray-300 py-3 rounded-xl text-sm font-bold text-gray-700">⌫</button>
             </div>
 
-            <button onclick="submitExpense()" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition">确认扣减</button>
+            <button onclick="submitExpense()" id="submit-expense-btn" class="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition">确认扣减</button>
         </div>
     </div>
 
-    <!-- 校准与设置模态框 -->
-    <div id="settings-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-3 max-h-[85vh] overflow-y-auto">
+    <!-- 📊 预算分配中心模态框（母池切蛋糕，专门修改分母/上限） -->
+    <div id="budget-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-3 max-h-[88vh] overflow-y-auto">
             <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="font-bold text-gray-800">🎛️ 余额手动校准</h3>
+                <h3 class="font-bold text-gray-800">📊 预算分配中心（修改上限）</h3>
+                <button onclick="closeBudgetModal()" class="text-gray-400 text-xl font-bold">&times;</button>
+            </div>
+            <p class="text-[11px] text-gray-500">在此自由调整月度总生活费及各信封的预算上限（分母）。修改预算上限不会打乱当前剩余金额（分子）。</p>
+
+            <!-- 母池与实时分配校验 -->
+            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 space-y-2">
+                <div class="flex justify-between items-center text-xs">
+                    <span class="font-bold text-indigo-900">🏦 月度总生活费母池</span>
+                    <input type="number" step="10" id="bgt-total-pool" oninput="updateBudgetAllocationPreview()" class="w-24 text-right border border-indigo-200 rounded-lg px-2 py-1 font-black text-indigo-700 bg-white">
+                </div>
+                <div class="flex justify-between items-center text-[11px] pt-1 border-t border-indigo-100" id="bgt-allocation-summary">
+                    <span>已分配：¥2500</span>
+                    <span class="font-bold text-emerald-600">完美匹配 (待分配 ¥0)</span>
+                </div>
+            </div>
+
+            <div id="budget-fields" class="space-y-2 text-xs"></div>
+
+            <div class="pt-2">
+                <button onclick="saveBudgetConfig()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-bold text-xs shadow">保存预算上限配置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 🎛️ 余额手动校准模态框（专门修改分子/当前剩余，绝不污染上限） -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-3 max-h-[88vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-gray-800">🎛️ 余额手动校准（修改剩余）</h3>
                 <button onclick="closeSettings()" class="text-gray-400 text-xl font-bold">&times;</button>
             </div>
-            <p class="text-[11px] text-gray-500">随时修改各信封的当前实际余额，点击保存即可生效。</p>
+            <p class="text-[11px] text-gray-500">仅校准各信封当前实际剩余金额（分子），信封的预算上限（分母）将严格保持不变。</p>
             <div id="settings-fields" class="space-y-2.5 text-xs"></div>
             <div class="pt-2 flex space-x-2">
-                <button onclick="saveSettings()" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold text-xs">保存校准</button>
+                <button onclick="saveSettings()" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold text-xs shadow">保存当前余额</button>
                 <button onclick="manualTriggerMonthReset()" class="bg-amber-100 text-amber-800 px-3 py-2.5 rounded-xl font-bold text-xs">模拟跨月结算</button>
             </div>
         </div>
@@ -175,7 +227,7 @@
         <div class="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-4">
             <div class="text-4xl">🎉</div>
             <h3 class="text-lg font-black text-gray-800" id="report-title">新月度已开启！</h3>
-            <p class="text-xs text-gray-500">上月各消费信封剩余已自动打包存入【省钱信封】，纳指定投余额已滚存并追加 ¥300。</p>
+            <p class="text-xs text-gray-500">上月各消费信封剩余已自动打包存入【省钱信封】，纳指定投余额已滚存并追加新月度预算。</p>
             <div id="report-details" class="bg-gray-50 rounded-2xl p-3 text-xs text-left space-y-1.5 border border-gray-100"></div>
             <button onclick="closeReportModal()" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold py-3 rounded-xl shadow-md">太棒了，开启新一个月！</button>
         </div>
@@ -198,7 +250,7 @@
     </div>
 
     <script>
-        // 工具函数：获取本地 YYYY-MM-DD 和 YYYY-MM
+        // 日期辅助工具函数
         function getLocalDateStr(d = new Date()) {
             const year = d.getFullYear();
             const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -219,16 +271,20 @@
             dt.setDate(dt.getDate() + days);
             return getLocalDateStr(dt);
         }
+        function round2(num) {
+            return Math.round((num + Number.EPSILON) * 100) / 100;
+        }
 
-        // 默认初始化数据
+        // 默认固定信封配置
         const DEFAULT_ENVELOPES = [
-            { id: 'snack', name: '🥤 饮料零食与夜宵', monthlyQuota: 150, total: 150, balance: 150, rollover: false },
-            { id: 'date', name: '🌹 周末恋爱/聚餐', monthlyQuota: 900, total: 900, balance: 900, rollover: false },
-            { id: 'utility', name: '⚡ 话费电费日用品', monthlyQuota: 100, total: 100, balance: 100, rollover: false },
-            { id: 'game', name: '🎮 游戏充值', monthlyQuota: 50, total: 50, balance: 50, rollover: false },
-            { id: 'invest', name: '📈 纳指定投', monthlyQuota: 300, total: 300, balance: 300, rollover: true }
+            { id: 'snack', name: '🥤 饮料零食与夜宵', monthlyQuota: 150, rolloverBase: 0, balance: 150, rollover: false },
+            { id: 'date', name: '🌹 周末恋爱/聚餐', monthlyQuota: 900, rolloverBase: 0, balance: 900, rollover: false },
+            { id: 'utility', name: '⚡ 话费电费日用品', monthlyQuota: 100, rolloverBase: 0, balance: 100, rollover: false },
+            { id: 'game', name: '🎮 游戏充值', monthlyQuota: 50, rolloverBase: 0, balance: 50, rollover: false },
+            { id: 'invest', name: '📈 纳指定投', monthlyQuota: 300, rolloverBase: 0, balance: 300, rollover: true }
         ];
 
+        // 读取并兼容升级本地存档
         let appData = JSON.parse(localStorage.getItem('envelope_wallet_pro_v2')) || null;
 
         if (!appData) {
@@ -236,6 +292,7 @@
             const isWknd = isWeekendDate(today);
             const initDaily = isWknd ? 0 : 45;
             appData = {
+                totalBudget: 2500,
                 currentMonth: getLocalMonthStr(),
                 lastActiveDate: today,
                 savingPool: 0,
@@ -250,10 +307,30 @@
                 history: []
             };
             saveData();
+        } else {
+            // 兼容旧版数据结构，确保母池与分母字段完整且不被污染
+            if (typeof appData.totalBudget !== 'number') appData.totalBudget = 2500;
+            if (typeof appData.dailyMeal.monthlyQuota !== 'number') appData.dailyMeal.monthlyQuota = 1000;
+            if (typeof appData.dailyMeal.dailyQuota !== 'number') appData.dailyMeal.dailyQuota = 45;
+            appData.fixedEnvelopes.forEach((env, idx) => {
+                if (typeof env.monthlyQuota !== 'number') {
+                    env.monthlyQuota = DEFAULT_ENVELOPES[idx] ? DEFAULT_ENVELOPES[idx].monthlyQuota : 100;
+                }
+                if (typeof env.rolloverBase !== 'number') {
+                    env.rolloverBase = 0;
+                }
+            });
+            saveData();
+        }
+
+        // 获取某个固定信封当月应显示的上限（分母）：普通信封严格等于 monthlyQuota，滚存信封等于 上月滚存基数 + monthlyQuota
+        function getEnvelopeCap(env) {
+            return env.rollover ? round2((env.rolloverBase || 0) + env.monthlyQuota) : round2(env.monthlyQuota);
         }
 
         let currentActiveEnvId = null;
         let currentInputVal = "0";
+        let selectedExpenseDate = getLocalDateStr();
 
         // 核心自动化引擎：跨天与跨月自动结算
         function checkLifecycle() {
@@ -264,13 +341,13 @@
                 return;
             }
 
-            // 情况 1：跨月了！（方案 A：跨月自动总结算 + 新周期重置二合一）
+            // 情况 1：跨月自动总结算 + 新周期重置二合一
             if (appData.currentMonth !== thisMonth) {
                 performMonthEndSettlement(thisMonth, today);
                 return;
             }
 
-            // 情况 2：同月内跨天了，逐日结算工作日三餐未用完的额度到省钱信封
+            // 情况 2：同月内跨天，逐日结算工作日三餐未用完的额度到省钱信封
             let cursorDate = appData.lastActiveDate;
             if (appData.dailyMeal.todayAvailable > 0) {
                 appData.savingPool = round2(appData.savingPool + appData.dailyMeal.todayAvailable);
@@ -287,7 +364,7 @@
                 cursorDate = addDays(cursorDate, 1);
             }
 
-            // 发放今天（today）的三餐额度
+            // 发放今天的三餐定额
             appData.dailyMeal.settledToday = false;
             if (!isWeekendDate(today)) {
                 const alloc = Math.min(appData.dailyMeal.poolRemaining, appData.dailyMeal.dailyQuota);
@@ -317,16 +394,16 @@
             appData.fixedEnvelopes.forEach(env => {
                 if (env.rollover) {
                     const oldBal = round2(Math.max(0, env.balance));
+                    env.rolloverBase = oldBal;
                     env.balance = round2(oldBal + env.monthlyQuota);
-                    env.total = env.balance;
-                    reportLines.push(`<div class="flex justify-between text-emerald-700"><span>📈 纳指定投（滚存¥${oldBal}+新¥300）：</span><span class="font-bold">¥${env.balance}</span></div>`);
+                    reportLines.push(`<div class="flex justify-between text-emerald-700"><span>📈 纳指定投（滚存¥${oldBal}+新¥${env.monthlyQuota}）：</span><span class="font-bold">¥${env.balance}</span></div>`);
                 } else {
                     const left = round2(Math.max(0, env.balance));
                     if (left > 0) {
                         totalSavedThisMonth = round2(totalSavedThisMonth + left);
                         reportLines.push(`<div class="flex justify-between"><span>${env.name}结余：</span><span class="font-bold text-amber-600">+¥${left}</span></div>`);
                     }
-                    env.total = env.monthlyQuota;
+                    env.rolloverBase = 0;
                     env.balance = env.monthlyQuota;
                 }
             });
@@ -336,7 +413,7 @@
 
             // 重置新月度三餐池并派发今天额度
             const isWknd = isWeekendDate(todayStr);
-            const initDaily = isWknd ? 0 : appData.dailyMeal.dailyQuota;
+            const initDaily = isWknd ? 0 : Math.min(appData.dailyMeal.monthlyQuota, appData.dailyMeal.dailyQuota);
             appData.dailyMeal.poolRemaining = round2(appData.dailyMeal.monthlyQuota - initDaily);
             appData.dailyMeal.todayAvailable = initDaily;
             appData.dailyMeal.settledToday = false;
@@ -358,8 +435,13 @@
             render();
         }
 
-        function round2(num) {
-            return Math.round((num + Number.EPSILON) * 100) / 100;
+        // 计算所有信封的月度预算分配总和
+        function getAllocatedTotal() {
+            let sum = appData.dailyMeal.monthlyQuota;
+            appData.fixedEnvelopes.forEach(env => {
+                sum = round2(sum + env.monthlyQuota);
+            });
+            return round2(sum);
         }
 
         // 渲染主界面
@@ -370,14 +452,30 @@
             const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
             const dayName = weekDays[new Date().getDay()];
 
-            document.getElementById('current-month-title').innerText = `${appData.currentMonth} 生活费管家`;
+            document.getElementById('current-month-title').innerText = `${appData.currentMonth} 记账工具`;
             document.getElementById('cycle-info').innerText = `${today} (${dayName}) · 每月1号自动结余重置`;
+
+            // 0. 渲染总生活费母池条
+            document.getElementById('mother-pool-total').innerText = `¥${appData.totalBudget}`;
+            const allocated = getAllocatedTotal();
+            const unallocated = round2(appData.totalBudget - allocated);
+            const poolStatusEl = document.getElementById('mother-pool-status');
+            if (unallocated === 0) {
+                poolStatusEl.className = "text-[11px] text-emerald-600 font-medium";
+                poolStatusEl.innerText = `已分配 ¥${allocated} (100% 匹配)`;
+            } else if (unallocated > 0) {
+                poolStatusEl.className = "text-[11px] text-amber-600 font-medium";
+                poolStatusEl.innerText = `已分 ¥${allocated} · 未分机动 ¥${unallocated}`;
+            } else {
+                poolStatusEl.className = "text-[11px] text-red-600 font-bold";
+                poolStatusEl.innerText = `⚠️ 已分 ¥${allocated} (超配 ¥${Math.abs(unallocated)})`;
+            }
 
             // 1. 渲染今日三餐看板
             document.getElementById('board-daily-available').innerText = `¥${appData.dailyMeal.todayAvailable.toFixed(1)}`;
             document.getElementById('board-daily-badge').innerText = wknd ? '周末走聚餐' : dayName;
             const totalMealRemaining = round2(appData.dailyMeal.poolRemaining + appData.dailyMeal.todayAvailable);
-            document.getElementById('board-daily-pool-left').innerText = `总剩余 ¥${totalMealRemaining}`;
+            document.getElementById('board-daily-pool-left').innerText = `总余 ¥${totalMealRemaining}`;
 
             const settleBtn = document.getElementById('btn-settle-daily');
             if (wknd) {
@@ -397,22 +495,24 @@
             if (appData.savingPool < 0) {
                 document.getElementById('board-saving-desc').innerText = "⚠️ 省钱信封处于透支状态";
             } else {
-                document.getElementById('board-saving-desc').innerText = "所有信封月底结余汇入此处";
+                document.getElementById('board-saving-desc').innerText = "结余滚入 / 超支与补账兜底";
             }
 
-            // 3. 渲染三餐总池卡片
-            const mealPercent = Math.round((totalMealRemaining / appData.dailyMeal.monthlyQuota) * 100);
-            document.getElementById('env-daily_meal-text').innerText = `总余 ¥${totalMealRemaining} / ¥${appData.dailyMeal.monthlyQuota}`;
+            // 3. 渲染三餐总池卡片（分母严格锚定 monthlyQuota）
+            const mealCap = appData.dailyMeal.monthlyQuota;
+            const mealPercent = mealCap > 0 ? Math.round((totalMealRemaining / mealCap) * 100) : 0;
+            document.getElementById('env-daily_meal-text').innerText = `总余 ¥${totalMealRemaining} / ¥${mealCap}`;
             document.getElementById('env-daily_meal-bar').style.width = `${Math.max(0, Math.min(100, mealPercent))}%`;
             document.getElementById('env-daily_meal-sub').innerText = wknd
                 ? `今天是周末，日常用餐请点击下方【周末恋爱/聚餐】`
                 : `今日可用 ¥${appData.dailyMeal.todayAvailable.toFixed(1)} | 未发池余 ¥${appData.dailyMeal.poolRemaining.toFixed(1)}`;
 
-            // 4. 渲染 5 个固定信封卡片
+            // 4. 渲染 5 个固定信封卡片（分母严格锚定 getEnvelopeCap(env)）
             const container = document.getElementById('fixed-envelopes-container');
             container.innerHTML = '';
             appData.fixedEnvelopes.forEach(env => {
-                const percent = env.total > 0 ? Math.round((env.balance / env.total) * 100) : 0;
+                const cap = getEnvelopeCap(env);
+                const percent = cap > 0 ? Math.round((env.balance / cap) * 100) : 0;
                 let barColor = env.rollover ? 'bg-emerald-600' : 'bg-indigo-600';
                 if (percent < 20) barColor = 'bg-red-500';
                 else if (percent < 50 && !env.rollover) barColor = 'bg-amber-500';
@@ -432,37 +532,41 @@
                                 <span class="font-bold text-gray-800 text-sm">${env.name}</span>
                                 ${badgeHtml}
                             </div>
-                            <span class="text-xs font-bold text-gray-700">¥${env.balance.toFixed(1)} / ¥${env.total}</span>
+                            <span class="text-xs font-bold text-gray-700">¥${env.balance.toFixed(1)} / ¥${cap}</span>
                         </div>
                         <div class="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                             <div class="${barColor} h-2 rounded-full transition-all duration-300" style="width: ${Math.max(0, Math.min(100, percent))}%"></div>
                         </div>
                         <div class="flex justify-between items-center mt-2 text-[11px] text-gray-400">
                             <span>${subText}</span>
-                            <span class="text-blue-500 font-medium shrink-0 ml-2">记账 ></span>
+                            <span class="text-blue-500 font-medium shrink-0 ml-2">记账/补账 ></span>
                         </div>
                     </div>
                 `);
             });
 
-            // 5. 渲染近期流水（支持一键撤销回滚）
+            // 5. 渲染近期流水（支持一键撤销并原路退回）
             const historyContainer = document.getElementById('history-list');
             if (appData.history.length === 0) {
                 historyContainer.innerHTML = `<div class="text-center text-xs text-gray-400 py-4">暂无记账记录，点击上方信封开始记账</div>`;
             } else {
                 historyContainer.innerHTML = '';
-                appData.history.slice(0, 12).forEach((item, index) => {
+                appData.history.slice(0, 15).forEach((item, index) => {
+                    const backdateTag = item.isBackdated
+                        ? `<span class="text-[10px] bg-purple-50 text-purple-700 px-1 rounded ml-1 font-medium">补记 ${item.targetDate.slice(5)}</span>`
+                        : '';
                     const savingTag = item.savingDeducted > 0
-                        ? `<span class="text-[10px] bg-red-50 text-red-600 px-1 rounded ml-1">含省钱池抵扣¥${item.savingDeducted}</span>`
+                        ? `<span class="text-[10px] bg-red-50 text-red-600 px-1 rounded ml-1">省钱池扣¥${item.savingDeducted}</span>`
                         : '';
                     const noteTag = item.note ? `<span class="text-gray-500 ml-1">· ${item.note}</span>` : '';
                     historyContainer.insertAdjacentHTML('beforeend', `
                         <div class="flex justify-between items-center text-xs py-2 border-b border-gray-50 last:border-none">
                             <div class="truncate pr-2">
                                 <span class="font-bold text-gray-800">${item.envName}</span>
+                                ${backdateTag}
                                 ${noteTag}
                                 ${savingTag}
-                                <div class="text-[10px] text-gray-400">${item.time}</div>
+                                <div class="text-[10px] text-gray-400">记录于 ${item.time}</div>
                             </div>
                             <div class="flex items-center space-x-2 shrink-0">
                                 <span class="font-bold ${item.isPlus ? 'text-emerald-600' : 'text-red-600'}">${item.isPlus ? '+' : '-'}¥${item.amount}</span>
@@ -474,6 +578,62 @@
             }
         }
 
+        // 记账键盘中的日期切换逻辑（今天 / 补记昨天 / 自选日期）
+        function selectExpenseDate(mode) {
+            const today = getLocalDateStr();
+            const yesterday = addDays(today, -1);
+            const btnToday = document.getElementById('date-btn-today');
+            const btnYest = document.getElementById('date-btn-yesterday');
+            const btnCustom = document.getElementById('date-btn-custom');
+            const dateInput = document.getElementById('custom-date-input');
+
+            const activeCls = "px-3 py-1 rounded-lg text-xs font-bold bg-white text-blue-600 shadow-sm transition";
+            const inactiveCls = "px-3 py-1 rounded-lg text-xs font-medium text-gray-600 transition";
+
+            if (mode === 'today') {
+                selectedExpenseDate = today;
+                dateInput.value = today;
+                btnToday.className = activeCls;
+                btnYest.className = inactiveCls;
+                btnCustom.className = "px-2.5 py-1 rounded-lg text-xs font-medium text-gray-600 transition";
+            } else if (mode === 'yesterday') {
+                selectedExpenseDate = yesterday;
+                dateInput.value = yesterday;
+                btnToday.className = inactiveCls;
+                btnYest.className = activeCls;
+                btnCustom.className = "px-2.5 py-1 rounded-lg text-xs font-medium text-gray-600 transition";
+            }
+            updateSimulationTip();
+        }
+
+        function triggerCustomDate() {
+            const dateInput = document.getElementById('custom-date-input');
+            if (dateInput.showPicker) dateInput.showPicker();
+            else dateInput.focus();
+        }
+
+        function onCustomDateChange(val) {
+            const today = getLocalDateStr();
+            const yesterday = addDays(today, -1);
+            if (!val || val > today) {
+                alert("不能选择未来的日期记账，已重置为今天");
+                selectExpenseDate('today');
+                return;
+            }
+            if (val === today) {
+                selectExpenseDate('today');
+            } else if (val === yesterday) {
+                selectExpenseDate('yesterday');
+            } else {
+                selectedExpenseDate = val;
+                const inactiveCls = "px-3 py-1 rounded-lg text-xs font-medium text-gray-600 transition";
+                document.getElementById('date-btn-today').className = inactiveCls;
+                document.getElementById('date-btn-yesterday').className = inactiveCls;
+                document.getElementById('date-btn-custom').className = "px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-purple-600 shadow-sm transition";
+                updateSimulationTip();
+            }
+        }
+
         // 打开数字键盘
         function openKeypad(envId, envName) {
             currentActiveEnvId = envId;
@@ -482,6 +642,10 @@
             document.getElementById('input-amount-display').innerText = "0";
             document.getElementById('expense-note').value = "";
             document.getElementById('input-simulation-tip').innerText = "";
+
+            const today = getLocalDateStr();
+            document.getElementById('custom-date-input').max = today;
+            selectExpenseDate('today');
 
             const investBar = document.getElementById('invest-quick-bar');
             if (envId === 'invest') {
@@ -523,24 +687,49 @@
             updateSimulationTip();
         }
 
-        // 实时预览扣减与省钱信封联动提示
+        // 实时预览扣减与省钱信封/补账联动提示
         function updateSimulationTip() {
             const tipEl = document.getElementById('input-simulation-tip');
+            const submitBtn = document.getElementById('submit-expense-btn');
+            const today = getLocalDateStr();
+            const isBackdated = selectedExpenseDate !== today;
+
+            if (isBackdated) {
+                submitBtn.innerText = `确认补记 (${selectedExpenseDate.slice(5)})`;
+                submitBtn.className = "w-full bg-purple-600 active:bg-purple-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition";
+            } else {
+                submitBtn.innerText = "确认扣减";
+                submitBtn.className = "w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition";
+            }
+
             const amt = parseFloat(currentInputVal) || 0;
             if (amt <= 0) {
-                tipEl.innerText = "";
+                if (isBackdated && currentActiveEnvId === 'daily_meal') {
+                    tipEl.className = "text-[11px] font-medium min-h-[16px] mt-1 text-right text-purple-600";
+                    tipEl.innerText = `🕒 补记 ${selectedExpenseDate.slice(5)} 三餐：因历史结余已入库，将直接从【省钱信封】冲抵`;
+                } else if (isBackdated) {
+                    tipEl.className = "text-[11px] font-medium min-h-[16px] mt-1 text-right text-purple-600";
+                    tipEl.innerText = `🕒 正在补记 ${selectedExpenseDate} 的账单`;
+                } else {
+                    tipEl.innerText = "";
+                }
                 return;
             }
 
             if (currentActiveEnvId === 'daily_meal') {
-                const avail = appData.dailyMeal.todayAvailable;
-                if (amt > avail) {
-                    const diff = round2(amt - avail);
-                    tipEl.className = "text-[11px] font-medium min-h-[16px] mt-1 text-right text-amber-600";
-                    tipEl.innerText = `⚡ 今日定额扣 ¥${avail.toFixed(1)} + 省钱信封自动兜底 ¥${diff}`;
+                if (isBackdated) {
+                    tipEl.className = "text-[11px] font-medium min-h-[16px] mt-1 text-right text-purple-600";
+                    tipEl.innerText = `🕒 补记 ${selectedExpenseDate.slice(5)} 三餐：直接从【省钱信封】扣除 ¥${amt}（扣后剩 ¥${round2(appData.savingPool - amt)}）`;
                 } else {
-                    tipEl.className = "text-[11px] font-medium min-h-[16px] mt-1 text-right text-emerald-600";
-                    tipEl.innerText = `✅ 扣减后今日三餐还剩 ¥${round2(avail - amt)}`;
+                    const avail = appData.dailyMeal.todayAvailable;
+                    if (amt > avail) {
+                        const diff = round2(amt - avail);
+                        tipEl.className = "text-[11px] font-medium min-h-[16px] mt-1 text-right text-amber-600";
+                        tipEl.innerText = `⚡ 今日定额扣 ¥${avail.toFixed(1)} + 省钱信封自动兜底 ¥${diff}`;
+                    } else {
+                        tipEl.className = "text-[11px] font-medium min-h-[16px] mt-1 text-right text-emerald-600";
+                        tipEl.innerText = `✅ 扣减后今日三餐还剩 ¥${round2(avail - amt)}`;
+                    }
                 }
             } else if (currentActiveEnvId === 'saving_spend') {
                 tipEl.className = "text-[11px] font-medium min-h-[16px] mt-1 text-right text-amber-600";
@@ -548,19 +737,20 @@
             } else {
                 const env = appData.fixedEnvelopes.find(e => e.id === currentActiveEnvId);
                 if (env) {
+                    const prefix = isBackdated ? `[补记 ${selectedExpenseDate.slice(5)}] ` : '';
                     if (amt > env.balance) {
                         const diff = round2(amt - env.balance);
                         tipEl.className = "text-[11px] font-medium min-h-[16px] mt-1 text-right text-red-500";
-                        tipEl.innerText = `⚠️ 信封仅剩 ¥${env.balance}，超支的 ¥${diff} 将从【省钱信封】扣除！`;
+                        tipEl.innerText = `⚠️ ${prefix}信封仅剩 ¥${env.balance}，超支的 ¥${diff} 将从【省钱信封】扣除！`;
                     } else {
                         tipEl.className = "text-[11px] font-medium min-h-[16px] mt-1 text-right text-gray-500";
-                        tipEl.innerText = `✅ 扣减后该信封剩余 ¥${round2(env.balance - amt)}`;
+                        tipEl.innerText = `✅ ${prefix}扣减后该信封剩余 ¥${round2(env.balance - amt)}`;
                     }
                 }
             }
         }
 
-        // 确认提交扣减（支持所有信封超支自动扣省钱信封）
+        // 确认提交扣减（支持正常扣减与回溯补账）
         function submitExpense() {
             const amt = round2(parseFloat(currentInputVal) || 0);
             if (amt <= 0) {
@@ -568,8 +758,10 @@
                 return;
             }
 
+            const today = getLocalDateStr();
+            const isBackdated = selectedExpenseDate !== today;
             const note = document.getElementById('expense-note').value.trim();
-            const nowTime = `${getLocalDateStr().slice(5)} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+            const nowTime = `${today.slice(5)} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
             let envName = "";
             let envDeducted = 0;
@@ -577,15 +769,22 @@
 
             if (currentActiveEnvId === 'daily_meal') {
                 envName = "🍚 工作日三餐";
-                const avail = appData.dailyMeal.todayAvailable;
-                if (amt <= avail) {
-                    envDeducted = amt;
-                    appData.dailyMeal.todayAvailable = round2(avail - amt);
+                if (isBackdated) {
+                    // 补记历史工作日三餐：因为历史未花完额度早已滚入省钱信封，直接从省钱信封冲抵
+                    envDeducted = 0;
+                    savingDeducted = amt;
+                    appData.savingPool = round2(appData.savingPool - amt);
                 } else {
-                    envDeducted = avail;
-                    savingDeducted = round2(amt - avail);
-                    appData.dailyMeal.todayAvailable = 0;
-                    appData.savingPool = round2(appData.savingPool - savingDeducted);
+                    const avail = appData.dailyMeal.todayAvailable;
+                    if (amt <= avail) {
+                        envDeducted = amt;
+                        appData.dailyMeal.todayAvailable = round2(avail - amt);
+                    } else {
+                        envDeducted = avail;
+                        savingDeducted = round2(amt - avail);
+                        appData.dailyMeal.todayAvailable = 0;
+                        appData.savingPool = round2(appData.savingPool - savingDeducted);
+                    }
                 }
             } else if (currentActiveEnvId === 'saving_spend') {
                 envName = "💰 省钱信封支取";
@@ -615,6 +814,8 @@
                 savingDeducted,
                 note,
                 time: nowTime,
+                targetDate: selectedExpenseDate,
+                isBackdated,
                 isPlus: false
             });
 
@@ -635,6 +836,7 @@
                 appData.dailyMeal.todayAvailable = 0;
                 appData.dailyMeal.settledToday = true;
 
+                const today = getLocalDateStr();
                 appData.history.unshift({
                     envId: 'settle_daily',
                     envName: '🌙 三餐结余入库',
@@ -642,7 +844,9 @@
                     envDeducted: avail,
                     savingDeducted: 0,
                     note: '存入省钱信封',
-                    time: `${getLocalDateStr().slice(5)} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+                    time: `${today.slice(5)} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+                    targetDate: today,
+                    isBackdated: false,
                     isPlus: true
                 });
 
@@ -652,11 +856,12 @@
             }
         }
 
-        // 撤销某条流水并自动原路退回金额
+        // 撤销某条流水并自动原路退回金额（包含补记账单的原路退回省钱信封）
         function undoHistory(index) {
             const item = appData.history[index];
             if (!item) return;
-            if (!confirm(`确定撤销「${item.envName} ¥${item.amount}」吗？金额将自动原路退回对应信封。`)) return;
+            const tag = item.isBackdated ? `（补记 ${item.targetDate.slice(5)}）` : '';
+            if (!confirm(`确定撤销「${item.envName}${tag} ¥${item.amount}」吗？金额将自动原路退回对应信封。`)) return;
 
             if (item.envId === 'daily_meal') {
                 appData.dailyMeal.todayAvailable = round2(appData.dailyMeal.todayAvailable + item.envDeducted);
@@ -680,28 +885,109 @@
             render();
         }
 
-        // 打开校准面板
-        function openSettings() {
-            const container = document.getElementById('settings-fields');
+        // 📊 打开预算分配中心（母池切蛋糕，专门修改分母上限，不影响当前剩余分子）
+        function openBudgetModal() {
+            document.getElementById('bgt-total-pool').value = appData.totalBudget;
+            const container = document.getElementById('budget-fields');
             let html = `
-                <div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-                    <span class="font-bold text-gray-700">🍚 今日三餐可用定额</span>
-                    <input type="number" step="0.1" id="cal-daily-today" value="${appData.dailyMeal.todayAvailable}" class="w-24 text-right border rounded px-2 py-1 font-bold">
-                </div>
-                <div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-                    <span class="font-bold text-gray-700">🍚 三餐未发放总池剩余</span>
-                    <input type="number" step="0.1" id="cal-daily-pool" value="${appData.dailyMeal.poolRemaining}" class="w-24 text-right border rounded px-2 py-1 font-bold">
-                </div>
-                <div class="flex justify-between items-center bg-amber-50 p-2 rounded-lg">
-                    <span class="font-bold text-amber-800">💰 省钱信封当前余额</span>
-                    <input type="number" step="0.1" id="cal-saving" value="${appData.savingPool}" class="w-24 text-right border rounded px-2 py-1 font-bold">
+                <div class="bg-blue-50/60 border border-blue-100 p-2.5 rounded-xl space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-gray-800">🍚 工作日三餐月度预算上限</span>
+                        <input type="number" step="10" id="bgt-daily-monthly" oninput="updateBudgetAllocationPreview()" value="${appData.dailyMeal.monthlyQuota}" class="w-24 text-right border rounded-lg px-2 py-1 font-bold bg-white">
+                    </div>
+                    <div class="flex justify-between items-center text-[11px] text-gray-600">
+                        <span>↳ 每个工作日发放定额</span>
+                        <input type="number" step="1" id="bgt-daily-quota" value="${appData.dailyMeal.dailyQuota}" class="w-20 text-right border rounded-lg px-2 py-0.5 font-bold bg-white">
+                    </div>
                 </div>
             `;
             appData.fixedEnvelopes.forEach(env => {
+                const extraNote = env.rollover && env.rolloverBase > 0 ? `<span class="text-[10px] text-emerald-600 block">当前含上月滚存 ¥${env.rolloverBase}</span>` : '';
                 html += `
-                    <div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg">
-                        <span class="font-bold text-gray-700">${env.name}</span>
-                        <input type="number" step="0.1" id="cal-env-${env.id}" value="${env.balance}" class="w-24 text-right border rounded px-2 py-1 font-bold">
+                    <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl">
+                        <div>
+                            <span class="font-bold text-gray-700">${env.name}</span>
+                            ${extraNote}
+                        </div>
+                        <input type="number" step="10" id="bgt-env-${env.id}" oninput="updateBudgetAllocationPreview()" value="${env.monthlyQuota}" class="w-24 text-right border rounded-lg px-2 py-1 font-bold bg-white">
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            updateBudgetAllocationPreview();
+            document.getElementById('budget-modal').classList.remove('hidden');
+        }
+
+        function updateBudgetAllocationPreview() {
+            const totalPool = round2(parseFloat(document.getElementById('bgt-total-pool').value) || 0);
+            let sum = round2(parseFloat(document.getElementById('bgt-daily-monthly').value) || 0);
+            appData.fixedEnvelopes.forEach(env => {
+                const el = document.getElementById(`bgt-env-${env.id}`);
+                if (el) sum = round2(sum + (parseFloat(el.value) || 0));
+            });
+            const diff = round2(totalPool - sum);
+            const summaryEl = document.getElementById('bgt-allocation-summary');
+            if (diff === 0) {
+                summaryEl.innerHTML = `<span>各信封预算合计：¥${sum}</span><span class="font-bold text-emerald-600">✅ 完美匹配 (待分 ¥0)</span>`;
+            } else if (diff > 0) {
+                summaryEl.innerHTML = `<span>各信封预算合计：¥${sum}</span><span class="font-bold text-amber-600">💡 尚有 ¥${diff} 未分配</span>`;
+            } else {
+                summaryEl.innerHTML = `<span>各信封预算合计：¥${sum}</span><span class="font-bold text-red-600">⚠️ 超出母池 ¥${Math.abs(diff)}</span>`;
+            }
+        }
+
+        function closeBudgetModal() {
+            document.getElementById('budget-modal').classList.add('hidden');
+        }
+
+        // 保存预算配置（方案 B：仅修改分母上限，不篡改当月当前剩余分子）
+        function saveBudgetConfig() {
+            appData.totalBudget = round2(parseFloat(document.getElementById('bgt-total-pool').value) || 0);
+            appData.dailyMeal.monthlyQuota = round2(parseFloat(document.getElementById('bgt-daily-monthly').value) || 0);
+            appData.dailyMeal.dailyQuota = round2(parseFloat(document.getElementById('bgt-daily-quota').value) || 45);
+
+            appData.fixedEnvelopes.forEach(env => {
+                const val = round2(parseFloat(document.getElementById(`bgt-env-${env.id}`).value) || 0);
+                env.monthlyQuota = val;
+            });
+
+            saveData();
+            closeBudgetModal();
+            render();
+        }
+
+        // 🎛️ 打开余额校准面板（仅校准分子/剩余金额，绝不修改分母上限）
+        function openSettings() {
+            const container = document.getElementById('settings-fields');
+            let html = `
+                <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl">
+                    <div>
+                        <span class="font-bold text-gray-700">🍚 今日三餐可用定额</span>
+                        <span class="text-[10px] text-gray-400 block">每日发放基准：¥${appData.dailyMeal.dailyQuota}</span>
+                    </div>
+                    <input type="number" step="0.1" id="cal-daily-today" value="${appData.dailyMeal.todayAvailable}" class="w-24 text-right border rounded-lg px-2 py-1 font-bold bg-white">
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl">
+                    <div>
+                        <span class="font-bold text-gray-700">🍚 三餐未发放总池剩余</span>
+                        <span class="text-[10px] text-gray-400 block">月度总上限：¥${appData.dailyMeal.monthlyQuota}</span>
+                    </div>
+                    <input type="number" step="0.1" id="cal-daily-pool" value="${appData.dailyMeal.poolRemaining}" class="w-24 text-right border rounded-lg px-2 py-1 font-bold bg-white">
+                </div>
+                <div class="flex justify-between items-center bg-amber-50 p-2.5 rounded-xl">
+                    <span class="font-bold text-amber-800">💰 省钱信封当前余额</span>
+                    <input type="number" step="0.1" id="cal-saving" value="${appData.savingPool}" class="w-24 text-right border rounded-lg px-2 py-1 font-bold bg-white">
+                </div>
+            `;
+            appData.fixedEnvelopes.forEach(env => {
+                const cap = getEnvelopeCap(env);
+                html += `
+                    <div class="flex justify-between items-center bg-gray-50 p-2.5 rounded-xl">
+                        <div>
+                            <span class="font-bold text-gray-700">${env.name}</span>
+                            <span class="text-[10px] text-gray-400 block">预算上限固定为：¥${cap}</span>
+                        </div>
+                        <input type="number" step="0.1" id="cal-env-${env.id}" value="${env.balance}" class="w-24 text-right border rounded-lg px-2 py-1 font-bold bg-white">
                     </div>
                 `;
             });
@@ -720,8 +1006,8 @@
 
             appData.fixedEnvelopes.forEach(env => {
                 const val = round2(parseFloat(document.getElementById(`cal-env-${env.id}`).value) || 0);
+                // 仅更新当前剩余余额（分子），绝不覆盖分母 monthlyQuota！
                 env.balance = val;
-                if (val > env.total) env.total = val;
             });
 
             saveData();
@@ -731,7 +1017,7 @@
 
         // 手动测试/触发跨月总结算
         function manualTriggerMonthReset() {
-            if (confirm("确定要立即执行【月末全信封结余入库 + 开启新月度】吗？（所有消费信封正数余额将转入省钱信封并重置满额，纳指定投将保留余额并+300元）")) {
+            if (confirm("确定要立即执行【月末全信封结余入库 + 开启新月度】吗？（所有消费信封正数余额将转入省钱信封并按预算上限重置满额，纳指定投将保留余额并累加新月度定投预算）")) {
                 closeSettings();
                 performMonthEndSettlement(getLocalMonthStr(), getLocalDateStr());
                 render();
